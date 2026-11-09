@@ -181,6 +181,7 @@ def chat(solicitud: MensajeChat, usuario: dict = Depends(requerir_rrhh)):
         raise HTTPException(status_code=502, detail="ADK devolvió un resultado inesperado.")
     mensajes = []
     herramientas = []
+    fuentes = []
     for evento in eventos:
         if not isinstance(evento, dict):
             continue
@@ -191,10 +192,26 @@ def chat(solicitud: MensajeChat, usuario: dict = Depends(requerir_rrhh)):
             fc = parte.get("functionCall")
             if isinstance(fc, dict) and isinstance(fc.get("name"), str):
                 herramientas.append(fc["name"])
+            fr = parte.get("functionResponse")
+            if isinstance(fr, dict) and fr.get("name") == "consultar_documentacion":
+                resultado = fr.get("response")
+                if isinstance(resultado, dict):
+                    # ADK puede envolver la respuesta de herramienta en 'result'.
+                    contenido = resultado.get("result", resultado)
+                    if isinstance(contenido, dict) and contenido.get("estado") == "resultados_encontrados":
+                        for encontrado in contenido.get("resultados", []):
+                            if not isinstance(encontrado, dict):
+                                continue
+                            nombre_doc = encontrado.get("documento")
+                            if isinstance(nombre_doc, str) and nombre_doc and nombre_doc not in fuentes:
+                                fuentes.append(nombre_doc)
             if evento.get("author") == "humania" and isinstance(parte.get("text"), str):
                 mensajes.append(parte["text"])
+    respuesta_final = mensajes[-1] if mensajes else "El agente no devolvió una respuesta de texto."
+    if fuentes:
+        respuesta_final += "\\n\\nFuentes recuperadas del RAG: " + ", ".join(fuentes[:5])
     return {
-        "mensaje": mensajes[-1] if mensajes else "El agente no devolvió una respuesta de texto.",
+        "mensaje": respuesta_final,
         "sesion_id": sesion,
-        "herramientas": list(dict.fromkeys(herramientas))
+        "herramientas": list(dict.fromkeys(herramientas)),
     }
