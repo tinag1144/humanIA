@@ -69,6 +69,7 @@ from humania.servicios.aprobaciones import (
 )
 
 from humania.seguridad.auditoria import verificar_borrador
+from humania.seguridad.plantillas import verificar_huella_plantilla_aprobada
 
 from humania.servicios.contratos import (
     verificar_plantilla,
@@ -439,19 +440,17 @@ def obtener_docx_aprobado(
                 detail="Los datos del contrato fueron modificados."
             )
 
-        # Verificamos la plantilla de referencia.
+        # Una versión histórica aprobada puede usar v1 o v2.
+        # Cada archivo se verifica contra su propia huella autorizada.
         if (
-            verificar_plantilla().get("estado") != "valida"
-            or not isinstance(huella_plantilla, str)
+            not isinstance(huella_plantilla, str)
             or not isinstance(huella_plantilla_decision, str)
-            or huella_plantilla.upper()
-            != HUELLA_PLANTILLA
-            or huella_plantilla_decision.upper()
-            != HUELLA_PLANTILLA
+            or huella_plantilla.upper() != huella_plantilla_decision.upper()
+            or not verificar_huella_plantilla_aprobada(huella_plantilla)
         ):
             raise HTTPException(
                 status_code=409,
-                detail="La plantilla no conserva su integridad."
+                detail="La plantilla histórica no conserva su integridad."
             )
 
         # Impedimos utilizar rutas manipuladas.
