@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, model_validator
 from api.main import requerir_rrhh
 from humania.modelos.contrato import DatosContrato
 from humania.servicios.estado_contrato import conectar, crear_registro
+from humania.seguridad.auditoria import inicializar_auditoria
 from humania.servicios.contratos import generar_borrador
 
 router = APIRouter(prefix="/api/interfaz", tags=["Interfaz HumanIA"])
@@ -60,6 +61,8 @@ def comprobar_sesion(sesion_id: str) -> str:
 
 @router.get("/resumen")
 def resumen(usuario: dict = Depends(requerir_rrhh)):
+    # Primera ejecución: las tablas aún pueden no existir.
+    inicializar_auditoria()
     with conectar() as db:
         filas = db.execute("SELECT estado, COUNT(*) FROM contratos GROUP BY estado").fetchall()
         borradores = db.execute("SELECT COUNT(*) FROM borradores").fetchone()[0]
@@ -69,6 +72,7 @@ def resumen(usuario: dict = Depends(requerir_rrhh)):
 
 @router.get("/contratos")
 def listar_contratos(usuario: dict = Depends(requerir_rrhh)):
+    inicializar_auditoria()
     with conectar() as db:
         filas = db.execute(
             "SELECT id, estado, datos, aprobado_por, confirmado_por "
@@ -92,12 +96,23 @@ def nuevo_contrato(solicitud: SolicitudContrato, usuario: dict = Depends(requeri
 
 @router.get("/contratos/{contrato_id}/borradores")
 def listar_borradores(contrato_id: str, usuario: dict = Depends(requerir_rrhh)):
+    inicializar_auditoria()
     with conectar() as db:
+        # La tabla de decisiones se crea al realizar la primera aprobación.
+        # Antes de eso, devolver los borradores pendientes sin fallar con 500.
+        existe_decisiones = db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='decisiones_borrador'"
+        ).fetchone() is not None
+        union_decisiones = (
+            "LEFT JOIN decisiones_borrador d ON d.borrador_id = b.id"
+            if existe_decisiones else ""
+        )
+        columna_decision = "d.decision" if existe_decisiones else "NULL"
         filas = db.execute(
-            """SELECT b.id, b.contrato_id, b.version, b.archivo, b.fecha_generacion,
-                      d.decision
+            f"""SELECT b.id, b.contrato_id, b.version, b.archivo, b.fecha_generacion,
+                      {columna_decision}
                FROM borradores b
-               LEFT JOIN decisiones_borrador d ON d.borrador_id = b.id
+               {union_decisiones}
                WHERE b.contrato_id = ?
                ORDER BY b.version DESC LIMIT 30""",
             (contrato_id,)
