@@ -117,6 +117,19 @@ No usar DNI/CUIT reales en la demostración. Los DNI de **9 dígitos** se admite
 - Las bases `*.db`, los tokens, credenciales, el entorno virtual y `node_modules/` están excluidos del repositorio.
 - La constancia **registra una decisión interna** y no equivale a firma digital ni a contrato formalizado.
 
+
+## Validación integral de la entrega (un comando)
+
+Con el entorno Python activado y las dependencias instaladas, desde la **raíz del proyecto**:
+
+```powershell
+python pruebas/validar_todo.py
+```
+
+La ejecución comprueba sintaxis Python, pruebas de exportación sin modificar el original, adjuntos PDF/DOCX, identificadores, contradicciones, integridad RAG, compilación del frontend y plantillas v1/v2. **No borra ni modifica los datos registrados**. Los errores se muestran por etapa.
+
+Después queda la comprobación funcional de **la descarga aprobada** con Microsoft Word, el **RAG** con Ollama y la calidad de las imágenes: son tareas dependientes del entorno local. En el panel de contratos, el botón **«Original para revisión»** no cambia la leyenda del DOCX auditado; las copias aprobadas se descargan desde **«DOCX aprobado»** o **«PDF aprobado»**.
+
 ## Estado del proyecto
 
 El circuito conversacional, la generación del borrador, su aprobación humana y las descargas se probaron con **datos ficticios**, incluyendo un caso de Pedro Gómez. El informe detallado y la matriz F01–F10 están en [`cierre_humania/ESTADO_Y_PRUEBAS.md`](cierre_humania/ESTADO_Y_PRUEBAS.md).
