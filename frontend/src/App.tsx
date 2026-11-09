@@ -252,7 +252,7 @@ function App() {
 
   const acceptDrop = (file?: File | null) => {
     if (!file) return
-    if (!/\\.(pdf|docx|png|jpg|jpeg|webp)$/i.test(file.name)) {
+    if (!/\.(pdf|docx|png|jpg|jpeg|webp)$/i.test(file.name)) {
       setError('Formato no admitido. Usá PDF, DOCX, PNG, JPG o WEBP.')
       return
     }
