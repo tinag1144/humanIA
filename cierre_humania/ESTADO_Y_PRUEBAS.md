@@ -40,3 +40,32 @@ Se revisaron los tres archivos del contrato ficticio de Pedro Gómez: DOCX de bo
 ## Criterio de DONE
 
 Marcar DONE únicamente cuando las pruebas críticas pasen y las limitaciones pendientes se declaren explícitamente. La funcionalidad F03 de imágenes no debe contarse como exitosa sin nueva evidencia. La constancia de aprobación **no equivale a firma digital ni formalización legal**.
+
+
+---
+
+## Avance de cierre — 09/11/2026 (versión publicada en main)
+
+Esta sección actualiza la incidencia de exportación descrita arriba. **No afirma que la ejecución final en Windows ya haya sido validada**.
+
+### Cambios implementados
+
+1. Las descargas aprobadas `/api/borradores/{id}/descargar-docx` y `/descargar-pdf` generan una **copia de presentación** con el responsable, la fecha y la aprobación interna. El original DOCX auditado no se reescribe y mantiene su SHA-256; la constancia referencia ese original.
+2. El frontend distingue **«Original para revisión»** de **«DOCX aprobado»** y **«PDF aprobado»**. El original de revisión conserva correctamente la leyenda «BORRADOR - SIN APROBACION FINAL».
+3. Se verifican las plantillas históricas v1/v2 por su huella autorizada individual; una nueva versión activa no invalida por sí misma una exportación histórica.
+4. Se añadieron pruebas automáticas independientes de Ollama y Word: `pruebas/probar_cierre_final.py` y `pruebas/probar_rag_sin_ollama.py`.
+5. Diagnóstico de solo lectura: `python pruebas/diagnostico_humania.py`.
+
+### Evidencia técnica de exportación
+
+Se ejecutó una prueba aislada del generador de copias con los bytes del DOCX ficticio de **Sofía Martínez** (borrador 7), simulando la lectura de la decisión aprobada. La copia mostró el encabezado «COPIA DE PRESENTACIÓN - APROBACIÓN INTERNA REGISTRADA», el responsable `responsable_prueba` y el estado `APROBADO`. Se comprobó que el original siguió teniendo la huella registrada en la constancia. Se renderizó e inspeccionó visualmente la copia DOCX de dos páginas. **Esto prueba el transformador, no la descarga HTTP y conversión por Word desde la instalación del usuario**.
+
+### Verificación final pendiente en Windows
+
+- Actualizar a `main`, reiniciar FastAPI y comprobar el endpoint de **DOCX aprobado** (nombre esperado: `copia_aprobada_7.docx`) y el de **PDF aprobado**; la descarga de revisión continuará como borrador.
+- Ejecutar `python -m unittest pruebas.probar_cierre_final pruebas.probar_rag_sin_ollama -v` y `python pruebas/diagnostico_humania.py`.
+- Repetir pruebas manuales de RAG con Ollama y transcripción de imágenes. **F03 imágenes sigue parcial hasta demostrar lectura fiable**, sin incorporación autónoma.
+- Validar en la interfaz una cuenta sin rol RR. HH., persistencia tras reinicio y que el agente no pueda aprobar por chat.
+- Verificar el PDF exportado con Microsoft Word en el Windows real.
+
+**Estado de cierre:** implementaciones y controles de regresión añadidos; aceptación integral pendiente de evidencia de la ejecución final. La constancia representa una aprobación interna, no una firma digital.
