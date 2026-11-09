@@ -159,3 +159,17 @@ humanIA/
 ---
 
 Proyecto académico de demostración — **HumanIA S.A.** · 2026.
+
+## Correcciones de experiencia de usuario y agente (noviembre de 2026)
+
+- **Historial de chats:** los nuevos turnos se guardan por usuario en `datos/historial_chat.db`, pueden consultarse y reabrirse desde el asistente. El archivo contiene mensajes de texto y nombres de adjuntos, **no** almacena archivos binarios. El historial empieza a conservarse después de actualizar esta versión; no reconstruye chats anteriores que no se habían guardado. Si ADK se reinicia, su memoria interna de sesión puede necesitar una nueva inicialización; se conserva el historial visible y los datos contractuales ya registrados.
+- **Drag & drop:** se puede soltar un PDF/DOCX/PNG/JPG/WEBP en el área de mensajes; validación previa de formato y límite de 8 MB. La opción manual sigue disponible.
+- **Seguridad:** solicitudes directas para aprobar o firmar desde el chat se rechazan con una explicación, antes de invocar Ollama.
+- **Adjuntos:** lectura alternativa por etiquetas explícitas en DOCX/PDF cuando falla la extracción con Ollama. No reemplaza una revisión humana, no infiere datos faltantes ni aprueba contratos.
+- **Visión:** respuestas visuales vacías, denegatorias o muy repetitivas se rechazan como no fiables. Este control reduce alucinaciones obvias pero no garantiza transcripciones exactas; mantener revisión manual.
+- **RAG:** cuando ADK devuelve los resultados de `consultar_documentacion`, la respuesta incorpora nombres de las fuentes recuperadas. Si el resultado no proporciona fuentes, no se inventan.
+- **Compatibilidad:** `litellm==1.105.0` evita la incompatibilidad con MCP reportada durante las pruebas en Windows.
+
+Pruebas unitarias añadidas: `python -m unittest pruebas.probar_correcciones -v`. Para el resto de controles, `python pruebas/validar_todo.py`.
+
+> Estas correcciones están publicadas en GitHub, pero sus rutas completas y la compilación final deben verificarse en la instalación Windows actualizada antes de marcar el cierre como aprobado.
