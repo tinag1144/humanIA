@@ -273,7 +273,22 @@ def es_respuesta_invalida(texto: str) -> bool:
         "no puedo procesar",
     )
 
-    return any(frase in limpio for frase in frases)
+    if any(frase in limpio for frase in frases):
+        return True
+
+    # Un modelo visual puede alucinar listados largos y repetitivos.
+    # Se marca como no fiable en lugar de presentarlo como transcripción.
+    lineas = [normalizar(linea).strip() for linea in texto.splitlines()
+              if len(linea.strip()) >= 12]
+    if len(lineas) >= 12:
+        repetidas = len(lineas) - len(set(lineas))
+        if repetidas >= 4 or repetidas / len(lineas) >= 0.30:
+            return True
+        prefijos = [linea[:45] for linea in lineas]
+        if max(prefijos.count(prefijo) for prefijo in set(prefijos)) >= 5:
+            return True
+
+    return False
 
 
 def consultar_modelo_visual(
