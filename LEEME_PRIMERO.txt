@@ -1,0 +1,22 @@
+HUMANIA - INTERFAZ WEB
+=======================
+1. Extraer este ZIP DENTRO de C:\Users\IPF-2026\Documents\humanIA\
+   Debe quedar: humanIA\frontend, humanIA\api\frontend_bridge.py, humanIA\instalar_frontend.py
+2. Abrir PowerShell en humanIA con (env) activado:
+   python instalar_frontend.py
+   uv pip install httpx
+3. Terminal 1 (FastAPI):
+   python -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8001
+4. Terminal 2 (agente REST):
+   adk api_server --host 127.0.0.1 --port 8000
+5. Terminal 3 (frontend):
+   cd frontend
+   npm install
+   npm run dev
+6. Abrir http://127.0.0.1:5173
+
+Se reutilizan las credenciales de RR.HH. ya creadas.
+Todas las operaciones sensibles pasan por FastAPI y requieren Bearer token.
+El agente ADK debe permanecer en 127.0.0.1 y NO exponerse a Internet.
+Esta es una interfaz para el prototipo local, no una implementación de producción.
+La creación manual de contratos registra datos sin aprobarlos: la confirmación y la aprobación humanas siguen siendo obligatorias.

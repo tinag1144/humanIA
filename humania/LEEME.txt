@@ -1,0 +1,24 @@
+HUMANIA — Adjuntos en el chat (F03 y F06)
+
+Archivos:
+- api/adjuntos_chat.py -> copiar en humanIA/api/
+- instalar_adjuntos.py -> copiar en la raíz humanIA/
+
+Instalación (en env de HumanIA):
+  python -m pip install python-multipart pypdf python-docx httpx
+  python instalar_adjuntos.py
+  python -m py_compile api/adjuntos_chat.py api/main.py
+
+Reiniciar FastAPI y frontend. En Asistente IA -> Elegir PDF, Word o imagen -> Analizar adjunto.
+Para imágenes, Ollama necesita un modelo con visión:
+  ollama pull llava:7b
+Para cambiarlo, variable de entorno HUMANIA_VISION_MODEL (antes de iniciar FastAPI).
+
+AVISOS:
+- Solo documentos FICTICIOS. Adjuntos en memoria, no persistidos.
+- Imágenes: el modelo local puede equivocarse y su lectura SIEMPRE debe revisarse.
+- Los datos extraídos son propuestas. Si discrepan con el chat se genera conflicto.
+- No se autoriza el registro si hay conflictos sin resolver ni se permite aprobación automática.
+- PDF escaneado: usar imagen para interpretar. Límite 8 MB / 30 páginas.
+- El flujo mantiene los comandos REGISTRAR CONTRATO y GENERAR BORRADOR.
+- Instalador hace respaldo de main.py y App.tsx. No modifica documentos/plantillas.

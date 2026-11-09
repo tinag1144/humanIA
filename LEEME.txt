@@ -1,0 +1,13 @@
+CORRECCION DE EXTRACCION HUMANIA
+
+Reemplazar SOLO api/flujo_conversacional.py por el archivo de este ZIP.
+Antes, guardar una copia del archivo actual.
+No reemplazar identificadores.py ni tocar bases de datos ni plantillas.
+
+Desde la raiz de humanIA:
+  python -m py_compile api/flujo_conversacional.py
+  python -m uvicorn api.main:app --reload --port 8001
+
+En la interfaz, usar Nueva conversacion y volver a enviar el ejemplo de Pedro Gomez.
+Resultado esperado: identificadores rechazados; nombre completo Pedro Gomez;
+razon social del empleador NO especificada (ningun CUIT usado como nombre).

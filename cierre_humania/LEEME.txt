@@ -1,0 +1,11 @@
+Paquete de cierre HumanIA (solo lectura)
+
+1. Ejecutá: python verificar_entrega.py
+   junto a los tres archivos del contrato de Pedro incluidos en el ZIP.
+   Necesita pypdf y la biblioteca estándar Python.
+2. Consultá ESTADO_Y_PRUEBAS.md con los resultados y casos pendientes.
+3. NO reemplaza ni modifica api/main.py, bases de datos o contratos.
+
+Se detecta un defecto visual en los documentos aprobados. Para corregirlo con
+seguridad hay que revisar el api/main.py ACTUAL de tu proyecto, especialmente
+el endpoint de descarga PDF y los de DOCX/constancia.

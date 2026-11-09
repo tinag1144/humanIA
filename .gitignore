@@ -1,0 +1,36 @@
+﻿# Dependencias
+node_modules/
+env/
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Bases de datos y datos locales
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Archivos temporales y respaldos
+*.bak
+*.respaldo*
+*.zip
+respaldos_plantilla/
+paquete_plantilla_v2/
+
+# Archivos generados
+borrador_*.docx
+contrato_aprobado_*.pdf
+constancia_aprobacion_*.pdf
+
+# Frontend
+frontend/dist/
+frontend/node_modules/

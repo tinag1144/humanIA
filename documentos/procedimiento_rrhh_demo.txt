@@ -1,0 +1,32 @@
+DOCUMENTO FICTICIO PARA PRUEBAS DE RAG
+HumanIA S.A. - Procedimiento demostrativo de Recursos Humanos
+
+1. Recopilacion de datos
+El sistema recopila los datos del empleador, empleado, puesto,
+jornada, remuneracion, fecha de inicio y lugar de trabajo.
+
+2. Deteccion de inconsistencias
+Cuando un documento y una solicitud contienen datos contradictorios,
+HumanIA registra el conflicto y solicita revision humana.
+El agente no debe elegir automaticamente un dato contradictorio.
+
+3. Confirmacion de datos
+Un responsable de Recursos Humanos autenticado debe confirmar
+los datos completos antes de generar un borrador contractual.
+
+4. Generacion de borradores
+HumanIA utiliza una plantilla DOCX previamente verificada.
+El documento generado conserva una huella SHA-256 y requiere
+aprobacion humana antes de habilitar su descarga autorizada.
+
+5. Aprobacion
+El agente de inteligencia artificial no puede aprobar ni firmar
+contratos. La decision de aprobacion corresponde a un responsable
+autenticado de Recursos Humanos.
+
+6. Exportacion y auditoria
+Una version aprobada puede exportarse a DOCX y PDF.
+La constancia de aprobacion es separada del contrato y no
+constituye una firma digital.
+
+FIN DEL DOCUMENTO FICTICIO
