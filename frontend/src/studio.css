@@ -34,3 +34,9 @@ html{scroll-behavior:smooth}body{background:#f5f7fa}::selection{background:#ddd5
 .chat-messages.drop-active{outline:3px dashed #a48ce5;outline-offset:-5px;background:#f9f5ff}
 .drop-hint{margin:12px auto;padding:11px;border-radius:10px;background:#ebe4ff;color:#5b439e;font-weight:600;text-align:center}
 .drop-label{font-size:11px;color:#79758e}
+
+/* Corrección: recepción de archivos en toda la tarjeta, no solo el área de mensajes. */
+.chat-card.chat-drop-active{outline:3px dashed #9e83e5;outline-offset:-4px;background:#fbf8ff}
+.chat-card.chat-drop-active .chat-messages{background:#faf6ff}
+.chat-card .history-strip{display:block!important;position:relative;z-index:1;flex:none;width:100%;background:#f8f5ff;border-top:1px solid #e8e0f8;border-bottom:1px solid #e8e0f8;padding:11px 18px}
+.chat-card .history-head strong{font-size:13px;color:#544391}
