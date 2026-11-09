@@ -461,7 +461,7 @@ def extraer_campos_etiquetados(texto: str) -> dict:
 
     if "dni_empleado" in mapa:
         mapa["dni_empleado"] = re.sub(
-            r"(?i)^DNI\\s*", "", mapa["dni_empleado"]
+            r"(?i)^DNI\s*", "", mapa["dni_empleado"]
         ).strip()
 
     if "remuneracion_bruta" in mapa:
