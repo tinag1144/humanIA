@@ -418,7 +418,7 @@ def campos_visuales(texto: str) -> dict[str, str]:
             continue
         etiqueta, valor = linea.split(":", 1)
         campo = ETIQUETAS_VISUALES.get(normalizar(etiqueta.strip()))
-        valor = valor.strip().strip("* \\t")
+        valor = valor.strip().strip("* \t")
         if not campo or not (2 <= len(valor) <= 180):
             continue
         if normalizar(valor) in ("ilegible", "no visible", "desconocido", "n/a", "no se ve"):
@@ -432,7 +432,7 @@ def campos_visuales(texto: str) -> dict[str, str]:
             continue
         if campo == "cuit_empleador" and not re.fullmatch(r"[0-9-]{11,13}", valor):
             continue
-        if campo == "remuneracion_bruta" and not re.search(r"\\d", valor):
+        if campo == "remuneracion_bruta" and not re.search(r"\d", valor):
             continue
         if campo in hallados and normalizar(hallados[campo]) != normalizar(valor):
             en_conflicto.add(campo)
@@ -692,24 +692,24 @@ async def procesar_adjunto(
     # Imagen: lectura conservadora de campos conocidos, sin guardar en contrato.
     if extension in {".png", ".jpg", ".jpeg", ".webp"}:
         coincidentes, dudosos = interpretar_imagen(contenido)
-        mensaje += "LECTURA VISUAL PROVISIONAL (requiere revisión humana)\\n\\n"
+        mensaje += "LECTURA VISUAL PROVISIONAL (requiere revisión humana)\n\n"
         if coincidentes:
-            mensaje += "Campos identificados en ambas lecturas:\\n"
-            mensaje += "\\n".join(
+            mensaje += "Campos identificados en ambas lecturas:\n"
+            mensaje += "\n".join(
                 f"• {ETIQUETAS[campo]}: {valor}"
                 for campo, valor in sorted(coincidentes.items())
-            ) + "\\n\\n"
+            ) + "\n\n"
         else:
-            mensaje += "No hubo campos confirmados por las dos lecturas.\\n\\n"
+            mensaje += "No hubo campos confirmados por las dos lecturas.\n\n"
         if dudosos:
-            mensaje += "Campos dudosos o incompletos (NO confirmados):\\n"
-            mensaje += "\\n".join(
+            mensaje += "Campos dudosos o incompletos (NO confirmados):\n"
+            mensaje += "\n".join(
                 f"• {ETIQUETAS[campo]}: revisar en la imagen original"
                 for campo in sorted(dudosos)
-            ) + "\\n\\n"
+            ) + "\n\n"
         mensaje += (
-            "Los campos identificados tampoco están verificados contra el original.\\n"
-            "No se incorporó ningún dato al contrato ni se registraron cambios.\\n"
+            "Los campos identificados tampoco están verificados contra el original.\n"
+            "No se incorporó ningún dato al contrato ni se registraron cambios.\n"
             "Compará cada valor con la imagen antes de utilizarlo."
         )
         return salida(
