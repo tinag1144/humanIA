@@ -21,3 +21,16 @@ html{scroll-behavior:smooth}body{background:#f5f7fa}::selection{background:#ddd5
 @media(max-width:560px){.page-head{align-items:flex-start;flex-direction:column}.page-head h1{font-size:29px}.head-actions{width:100%;flex-wrap:wrap}.stat-grid{gap:10px}.stat-card{min-height:170px;padding:19px 14px}.stat-card>strong{font-size:31px}.welcome-banner{padding:30px 24px}.banner-copy h2{font-size:27px}.banner-art{right:-155px}.page-content{padding:23px 14px 44px}.topbar{padding:0 15px}.chat-messages{padding:22px 15px}.chat-head-badge{display:none}.chat-line{max-width:99%}.contracts-table{min-width:620px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .export-guidance{margin:10px 0 14px;padding:12px 13px;border:1px solid #e9e3fc;border-radius:10px;background:#f7f4ff;color:#635481;font-size:12px;line-height:1.6}
+
+/* Historial de conversaciones y carga por arrastre */
+.history-strip{border-bottom:1px solid #e6e5ef;padding:12px 18px;background:#fcfbff}
+.history-head{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#595074;margin-bottom:8px}
+.history-head button{border:0;background:transparent;cursor:pointer;color:#6b5f98;padding:4px}
+.history-items{display:flex;gap:7px;overflow:auto;padding:2px 0 5px}
+.history-items button{flex:0 0 auto;display:flex;align-items:center;gap:7px;max-width:235px;border:1px solid #e3e1ef;background:white;border-radius:9px;padding:8px 10px;cursor:pointer;font:inherit;font-size:12px;color:#504d68}
+.history-items button.active{border-color:#9785df;background:#f1edff}
+.history-items button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-items small{color:#8c869d}
+.chat-messages.drop-active{outline:3px dashed #a48ce5;outline-offset:-5px;background:#f9f5ff}
+.drop-hint{margin:12px auto;padding:11px;border-radius:10px;background:#ebe4ff;color:#5b439e;font-weight:600;text-align:center}
+.drop-label{font-size:11px;color:#79758e}
