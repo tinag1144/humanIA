@@ -209,7 +209,7 @@ def chat(solicitud: MensajeChat, usuario: dict = Depends(requerir_rrhh)):
                 mensajes.append(parte["text"])
     respuesta_final = mensajes[-1] if mensajes else "El agente no devolvió una respuesta de texto."
     if fuentes:
-        respuesta_final += "\\n\\nFuentes recuperadas del RAG: " + ", ".join(fuentes[:5])
+        respuesta_final += "\n\nFuentes recuperadas del RAG: " + ", ".join(fuentes[:5])
     return {
         "mensaje": respuesta_final,
         "sesion_id": sesion,
