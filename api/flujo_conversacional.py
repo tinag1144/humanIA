@@ -247,15 +247,15 @@ def chat_contratos(solicitud: MensajeChat, usuario: dict = Depends(requerir_rrhh
     # Las solicitudes de aprobar, firmar o forzar estados desde chat se rechazan
     # antes de invocar el extractor o ADK. No altera contratos registrados.
     accion_prohibida = re.search(
-        r"\\b(?:aproba(?:r|lo|la|me|s)?|aprob[aá](?:lo|la|s|me)?|"
+        r"\b(?:aproba(?:r|lo|la|me|s)?|aprob[aá](?:lo|la|s|me)?|aprueb[a-z]*|"
         r"firm[aá](?:r|lo|la|s)?|"
-        r"marca(?:r|lo|la)?\\s+(?:el\\s+)?contrato\\s+como\\s+aprobado|"
-        r"cambi[aá](?:r|lo|la)?\\s+(?:el\\s+)?estado\\s+(?:a|por)\\s+aprobado)\\b",
+        r"marca(?:r|lo|la)?\s+(?:el\s+)?contrato\s+como\s+aprobado|"
+        r"cambi[aá](?:r|lo|la)?\s+(?:el\s+)?estado\s+(?:a|por)\s+aprobado)\b",
         instruccion,
     )
     consulta_informativa = re.match(
         r"^(?:quien|como|cuando|que|cual|puede|se puede|explicame|"
-        r"consult[ae]|busca|cuales|donde)\\b",
+        r"consult[ae]|busca|cuales|donde)\b",
         instruccion,
     )
     if accion_prohibida and not consulta_informativa:
