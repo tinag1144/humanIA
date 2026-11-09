@@ -24,6 +24,9 @@ type Page = 'inicio' | 'agente' | 'contratos' | 'documentacion'
 
 type ChatLine = { id: number; role: 'user' | 'agent'; text: string; herramientas?: string[] }
 
+type HistoryItem = { sesion_id: string; titulo: string; actualizado: string }
+type SavedChat = { sesion_id: string; titulo: string; mensajes: { role: 'user' | 'agent'; text: string; herramientas: string[] }[] }
+
 type FormData = Record<string, string>
 
 
@@ -181,6 +184,9 @@ function App() {
   const [chatInput, setChatInput] = useState('')
 
   const [chatSession, setChatSession] = useState<string | null>(null)
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [historyTitle, setHistoryTitle] = useState('')
+  const [dragging, setDragging] = useState(false)
 
   const [sending, setSending] = useState(false)
 
@@ -194,13 +200,77 @@ function App() {
 
 
 
+  const refreshHistory = useCallback(async () => {
+    if (!token) return
+    try {
+      const items = await request<HistoryItem[]>('/api/historial', token)
+      setHistory(items)
+    } catch { /* el historial no debe interrumpir el chat */ }
+  }, [token])
+
+  useEffect(() => { void refreshHistory() }, [refreshHistory])
+
+  const openHistory = async (sesionId: string) => {
+    if (!token || sending || subiendoAdjunto) return
+    try {
+      const saved = await request<SavedChat>(`/api/historial/${sesionId}`, token)
+      setChatSession(saved.sesion_id)
+      setHistoryTitle(saved.titulo)
+      setChatLines(saved.mensajes.map((m, i) => ({
+        id: i + 1, role: m.role, text: m.text, herramientas: m.herramientas
+      })))
+      setAdjunto(null)
+      setError('')
+    } catch (e) { setError((e as Error).message) }
+  }
+
+  const newConversation = () => {
+    if (sending || subiendoAdjunto) return
+    setChatSession(null)
+    setHistoryTitle('')
+    setChatInput('')
+    setAdjunto(null)
+    if (adjuntoInput.current) adjuntoInput.current.value = ''
+    setChatLines([{ id: Date.now(), role: 'agent', text: '¡Hola! Iniciamos una nueva conversación. ¿En qué puedo ayudarte?' }])
+  }
+
+  const persistTurn = async (
+    sesionId: string, title: string,
+    messages: { role: 'user' | 'agent'; text: string; herramientas?: string[] }[]
+  ) => {
+    if (!token) return
+    try {
+      await request('/api/historial/turno', token, {
+        method: 'POST',
+        body: JSON.stringify({ sesion_id: sesionId, titulo: title, mensajes: messages })
+      })
+      void refreshHistory()
+    } catch (e) {
+      setNotice('La respuesta llegó, pero no se pudo guardar en el historial: ' + (e as Error).message)
+    }
+  }
+
+  const acceptDrop = (file?: File | null) => {
+    if (!file) return
+    if (!/\\.(pdf|docx|png|jpg|jpeg|webp)$/i.test(file.name)) {
+      setError('Formato no admitido. Usá PDF, DOCX, PNG, JPG o WEBP.')
+      return
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError('El archivo supera los 8 MB permitidos.')
+      return
+    }
+    setError('')
+    setAdjunto(file)
+  }
+
   const resetMessages = () => { setError(''); setNotice('') }
 
   const signOut = useCallback(() => {
 
     sessionStorage.removeItem('humania_token')
 
-    setToken(null); setMe(null); setSelected(null); setChatSession(null)
+    setToken(null); setMe(null); setSelected(null); setChatSession(null); setHistory([]); setHistoryTitle('')
 
   }, [])
 
@@ -380,6 +450,12 @@ function App() {
       })
 
       setChatSession(result.sesion_id)
+      const title = historyTitle || texto.slice(0, 80)
+      setHistoryTitle(title)
+      await persistTurn(result.sesion_id, title, [
+        { role: 'user', text: texto },
+        { role: 'agent', text: result.mensaje, herramientas: result.herramientas }
+      ])
 
       setChatLines(lines => [...lines, { id: Date.now() + 1, role: 'agent', text: result.mensaje, herramientas: result.herramientas }])
 
@@ -432,6 +508,12 @@ function App() {
       const parsed = result as ChatResult
 
       setChatSession(parsed.sesion_id)
+      const title = historyTitle || ('Archivo: ' + file.name).slice(0, 90)
+      setHistoryTitle(title)
+      await persistTurn(parsed.sesion_id, title, [
+        { role: 'user', text: 'Adjunto: ' + file.name },
+        { role: 'agent', text: parsed.mensaje, herramientas: parsed.herramientas }
+      ])
 
       setChatLines(lines => [
 
@@ -543,17 +625,17 @@ function App() {
 
         </>}
 
-        {page==='agente' && <><div className="page-head chat-heading"><div><div className="eyebrow">ASISTENTE INTELIGENTE</div><h1>Conversá con HumanIA<span className="heading-dot">.</span></h1><p>Validá información y consultá documentación con inteligencia artificial local.</p></div><button className="btn secondary" onClick={()=>{setChatSession(null);setChatLines([{id:Date.now(),role:'agent',text:'¡Hola! Iniciamos una nueva conversación. ¿En qué puedo ayudarte?'}])}}><RefreshCw size={17}/> Nueva conversación</button></div><div className="chat-layout"><section className="chat-card"><div className="chat-card-head"><div className="agent-avatar"><Sparkles size={22}/></div><div><strong>HumanIA Assistant</strong><span><i/> Agente local · Qwen 2.5 7B</span></div><span className="chat-head-badge"><ShieldCheck size={14}/> Supervisado</span></div><div className="chat-messages">{chatLines.map(line=><div key={line.id} className={`chat-line ${line.role}`}><div className="bubble-avatar">{line.role==='agent'?<Sparkles size={16}/>:<UserRound size={16}/>}</div><div className="bubble-body"><div className="bubble-name">{line.role==='agent'?'HumanIA':'Vos'}</div><div className="message-bubble">{line.text}</div>{line.herramientas&&line.herramientas.length>0&&<div className="tools-used"><Check size={14}/> Herramientas: {line.herramientas.join(', ')}</div>}</div></div>)}{sending&&<div className="chat-line agent"><div className="bubble-avatar"><Sparkles size={16}/></div><div className="bubble-body"><div className="bubble-name">HumanIA</div><div className="message-bubble thinking"><span/><span/><span/></div></div></div>}<div ref={bottomRef}/></div>{chatLines.length<3&&<div className="suggestions"><span>PROBÁ PREGUNTANDO</span><div>{prompts.map(prompt=><button key={prompt} onClick={()=>void doSend(prompt)} disabled={sending}>{prompt}<ArrowRight size={14}/></button>)}</div></div>}<div style={{display:'flex',gap:8,alignItems:'center',padding:'8px 12px',flexWrap:'wrap'}}>
+        {page==='agente' && <><div className="page-head chat-heading"><div><div className="eyebrow">ASISTENTE INTELIGENTE</div><h1>Conversá con HumanIA<span className="heading-dot">.</span></h1><p>Validá información y consultá documentación con inteligencia artificial local.</p></div><button className="btn secondary" onClick={newConversation} disabled={sending||subiendoAdjunto}><RefreshCw size={17}/> Nueva conversación</button></div><div className="chat-layout"><section className="chat-card"><div className="history-strip"><div className="history-head"><strong>Conversaciones anteriores</strong><button type="button" onClick={()=>void refreshHistory()} title="Actualizar historial"><RefreshCw size={15}/></button></div><div className="history-items">{history.map(item=><button type="button" className={chatSession===item.sesion_id?'active':''} key={item.sesion_id} onClick={()=>void openHistory(item.sesion_id)} disabled={sending||subiendoAdjunto}><MessageCircle size={15}/><span>{item.titulo}</span></button>)}{history.length===0&&<small>Las próximas conversaciones aparecerán acá.</small>}</div></div><div className="chat-card-head"><div className="agent-avatar"><Sparkles size={22}/></div><div><strong>HumanIA Assistant</strong><span><i/> Agente local · Qwen 2.5 7B</span></div><span className="chat-head-badge"><ShieldCheck size={14}/> Supervisado</span></div><div className={dragging?'chat-messages drop-active':'chat-messages'} onDragEnter={e=>{e.preventDefault();setDragging(true)}} onDragOver={e=>e.preventDefault()} onDragLeave={e=>{e.preventDefault();setDragging(false)}} onDrop={e=>{e.preventDefault();setDragging(false);acceptDrop(e.dataTransfer.files?.[0])}}>{dragging&&<div className="drop-hint">Soltá el archivo para adjuntarlo</div>}{chatLines.map(line=><div key={line.id} className={`chat-line ${line.role}`}><div className="bubble-avatar">{line.role==='agent'?<Sparkles size={16}/>:<UserRound size={16}/>}</div><div className="bubble-body"><div className="bubble-name">{line.role==='agent'?'HumanIA':'Vos'}</div><div className="message-bubble">{line.text}</div>{line.herramientas&&line.herramientas.length>0&&<div className="tools-used"><Check size={14}/> Herramientas: {line.herramientas.join(', ')}</div>}</div></div>)}{sending&&<div className="chat-line agent"><div className="bubble-avatar"><Sparkles size={16}/></div><div className="bubble-body"><div className="bubble-name">HumanIA</div><div className="message-bubble thinking"><span/><span/><span/></div></div></div>}<div ref={bottomRef}/></div>{chatLines.length<3&&<div className="suggestions"><span>PROBÁ PREGUNTANDO</span><div>{prompts.map(prompt=><button key={prompt} onClick={()=>void doSend(prompt)} disabled={sending}>{prompt}<ArrowRight size={14}/></button>)}</div></div>}<div style={{display:'flex',gap:8,alignItems:'center',padding:'8px 12px',flexWrap:'wrap'}}>
 
   <input ref={adjuntoInput} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" style={{display:'none'}}
 
-    onChange={e=>setAdjunto(e.target.files?.[0] || null)} />
+    onChange={e=>acceptDrop(e.target.files?.[0])} />
 
-  <button type="button" className="btn secondary" disabled={sending||subiendoAdjunto}
+  <span className="drop-label">También podés arrastrar un archivo al chat · Máx. 8 MB</span><button type="button" className="btn secondary" disabled={sending||subiendoAdjunto}
 
     onClick={()=>adjuntoInput.current?.click()}><Paperclip size={16}/> Elegir PDF, Word o imagen</button>
 
-  {adjunto&&<><span style={{fontSize:12,wordBreak:'break-all'}}>{adjunto.name}</span>
+  {adjunto&&<><span style={{fontSize:12,wordBreak:'break-all'}}>{adjunto.name}</span><button type="button" className="btn subtle" onClick={()=>{setAdjunto(null);if(adjuntoInput.current)adjuntoInput.current.value=''}} aria-label="Quitar archivo"><X size={16}/></button>
 
     <button type="button" className="btn primary" disabled={sending||subiendoAdjunto}
 
