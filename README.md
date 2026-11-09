@@ -68,7 +68,7 @@ La descarga de `llava:7b` es opcional si no se van a probar imágenes. **No impl
 
 ### Inicialización
 
-1. Crear un usuario RR. HH. por el procedimiento de `humania/seguridad/autenticacion.py` (la base local y las credenciales no se incluyen en GitHub).
+1. Crear el primer usuario RR. HH. ejecutando `python configurar_rrhh.py`; el asistente pide nombre de usuario y contraseña sin mostrarla (la base local y las credenciales no se incluyen en GitHub).
 2. Indexar los documentos de ejemplo con `python indexar.py` (requiere Ollama).
 3. Verificar que las plantillas v1 y v2 estén presentes e íntegras. El archivo `humania/servicios/contratos.py` define la versión activa; no editar las plantillas autorizadas sobre sus huellas registradas.
 
