@@ -16,7 +16,8 @@ PASOS = [
     (
         "Regresión de exportación, documentos, validaciones y RAG",
         [sys.executable, "-m", "unittest",
-         "pruebas.probar_cierre_final", "pruebas.probar_rag_sin_ollama", "-v"],
+         "pruebas.probar_cierre_final", "pruebas.probar_rag_sin_ollama",
+         "pruebas.probar_primera_ejecucion", "-v"],
         ROOT,
     ),
     ("Compilación frontend TypeScript + Vite", ["npm", "run", "build"], ROOT / "frontend"),
