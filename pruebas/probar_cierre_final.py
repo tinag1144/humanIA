@@ -143,6 +143,18 @@ class PruebasCierreFinal(unittest.TestCase):
             validar_archivo("falso.pdf", b"Esto no es un PDF")
         self.assertEqual(error.exception.status_code, 415)
 
+    def test_autorizacion_rrhh_rechaza_rol_no_permitido(self):
+        from api.main import requerir_rrhh
+        with self.assertRaises(HTTPException) as error:
+            requerir_rrhh({"rol": "consulta", "usuario": "invitado"})
+        self.assertEqual(error.exception.status_code, 403)
+
+    def test_falta_de_token_rechazada(self):
+        from api.main import obtener_usuario_actual
+        with self.assertRaises(HTTPException) as error:
+            obtener_usuario_actual(None)
+        self.assertEqual(error.exception.status_code, 401)
+
     def test_identificadores_invalidos_se_filtran(self):
         correctos, errores = filtrar_identificadores(
             {"dni_empleado": "ABC1234", "cuit_empleador": "30-ABC-9", "puesto": "Analista"}
