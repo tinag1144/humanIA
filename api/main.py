@@ -1004,3 +1004,7 @@ app.include_router(descarga_revision_router)
 # Documentos ficticios adjuntos al chat.
 from api.adjuntos_chat import router as adjuntos_router
 app.include_router(adjuntos_router)
+
+# Historial persistente y autenticado de conversaciones.
+from api.historial_chat import router as historial_router
+app.include_router(historial_router)
