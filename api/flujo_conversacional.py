@@ -244,6 +244,29 @@ def chat_contratos(solicitud: MensajeChat, usuario: dict = Depends(requerir_rrhh
     instruccion = normalizar(mensaje)
     estado = cargar(nombre_usuario, sesion)
 
+    # Las solicitudes de aprobar, firmar o forzar estados desde chat se rechazan
+    # antes de invocar el extractor o ADK. No altera contratos registrados.
+    accion_prohibida = re.search(
+        r"\\b(?:aproba(?:r|lo|la|me|s)?|aprob[aá](?:lo|la|s|me)?|"
+        r"firm[aá](?:r|lo|la|s)?|"
+        r"marca(?:r|lo|la)?\\s+(?:el\\s+)?contrato\\s+como\\s+aprobado|"
+        r"cambi[aá](?:r|lo|la)?\\s+(?:el\\s+)?estado\\s+(?:a|por)\\s+aprobado)\\b",
+        instruccion,
+    )
+    consulta_informativa = re.match(
+        r"^(?:quien|como|cuando|que|cual|puede|se puede|explicame|"
+        r"consult[ae]|busca|cuales|donde)\\b",
+        instruccion,
+    )
+    if accion_prohibida and not consulta_informativa:
+        return salida(
+            "No puedo aprobar, firmar ni cambiar el estado de contratos desde el chat. "
+            "La aprobación requiere una revisión humana desde el módulo Contratos "
+            "y la cuenta autorizada de Recursos Humanos. No se realizó ninguna acción.",
+            sesion,
+            ["restriccion_aprobacion_humana"],
+        )
+
     # Preservamos ADK/RAG/búsqueda existente para preguntas fuera del flujo.
     if estado["estado"] == "recopilando" and not estado["datos"] and not es_inicio(mensaje):
         return chat_existente(MensajeChat(mensaje=mensaje, sesion_id=solicitud.sesion_id), usuario)
