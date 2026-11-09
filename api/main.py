@@ -27,6 +27,7 @@ import pythoncom
 
 from docx2pdf import convert
 from pypdf import PdfReader
+from api.exportacion_aprobada import crear_copia_presentacion
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
@@ -523,9 +524,10 @@ def descargar_docx_aprobado(
     usuario: dict = Depends(requerir_rrhh)
 ):
 
-    contenido, nombre, _ = obtener_docx_aprobado(
+    contenido_original, _, _ = obtener_docx_aprobado(
         borrador_id
     )
+    contenido = crear_copia_presentacion(contenido_original, borrador_id)
 
     return Response(
         content=contenido,
@@ -535,7 +537,7 @@ def descargar_docx_aprobado(
         ),
         headers={
             "Content-Disposition": (
-                f'attachment; filename="{nombre}"'
+                f'attachment; filename="copia_aprobada_{borrador_id}.docx"'
             ),
             "Cache-Control": "no-store",
             "X-Content-Type-Options": "nosniff"
@@ -558,9 +560,10 @@ def descargar_pdf_aprobado(
     No altera el archivo original.
     """
 
-    contenido_docx, _, contrato_id = obtener_docx_aprobado(
+    contenido_original, _, contrato_id = obtener_docx_aprobado(
         borrador_id
     )
+    contenido_docx = crear_copia_presentacion(contenido_original, borrador_id)
 
     try:
         with tempfile.TemporaryDirectory() as carpeta:
@@ -612,7 +615,7 @@ def descargar_pdf_aprobado(
         ).hexdigest()
 
         huella_docx = hashlib.sha256(
-            contenido_docx
+            contenido_original
         ).hexdigest()
 
         fecha = datetime.now(timezone.utc).isoformat()
