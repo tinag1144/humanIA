@@ -491,9 +491,15 @@ def leer_ocr_local(contenido: bytes) -> tuple[str, int]:
 
 
 def campos_ocr(texto: str) -> dict[str, str]:
-    """Busca exclusivamente etiquetas impresas explícitas en líneas OCR."""
-    hallados = {}
-    en_conflicto = set()
+    """Reconoce campos explícitos del OCR sin inventar valores.
+
+    Un rótulo "Domicilio" sin sujeto solo se asigna cuando la estructura
+    distingue inequívocamente encabezado del empleador y ficha del empleado.
+    """
+    from datetime import date
+
+    hallados: dict[str, str] = {}
+    en_conflicto: set[str] = set()
     sinonimos = {
         "empleado/a": "nombre_empleado",
         "empleado": "nombre_empleado",
@@ -506,21 +512,45 @@ def campos_ocr(texto: str) -> dict[str, str]:
         "remuneracion bruta": "remuneracion_bruta",
         "lugar de trabajo": "lugar_trabajo",
         "cuit": "cuit_empleador",
-        # "Domicilio" sin contexto es ambiguo: puede ser el del empleador.
         "domicilio del empleado": "domicilio_empleado",
         "domicilio del empleador": "domicilio_empleador",
+        "razon social": "empleador",
     }
-    for linea in texto.splitlines()[:45]:
+
+    lineas = [linea.strip() for linea in texto.splitlines()[:45] if linea.strip()]
+    # Marcar la ficha del trabajador solo al encontrar un rótulo de empleado.
+    inicio_empleado = next(
+        (i for i, linea in enumerate(lineas)
+         if re.match(r"(?i)^\s*(?:empleado/a|nombre del empleado)\s*:", linea)),
+        None,
+    )
+    # El CUIT puede venir en la misma línea del nombre del empleador.
+    # Solo se separa cuando figura expresamente con etiqueta CUIT.
+    for i, linea in enumerate(lineas):
+        patron_cuit = re.search(r"\bCUIT\s*:\s*([0-9]{2}-[0-9]{8}-[0-9])\b", linea, re.I)
+        if patron_cuit and (inicio_empleado is None or i < inicio_empleado):
+            hallados["cuit_empleador"] = patron_cuit.group(1)
+            nombre = linea[:patron_cuit.start()].strip(" -•*")
+            if (2 <= len(nombre) <= 90 and
+                    re.search(r"\b(?:S\.?\s*A\.?|S\.?\s*R\.?\s*L\.?)\s*\.?$", nombre, re.I)):
+                hallados["empleador"] = nombre
+
+    for i, linea in enumerate(lineas):
         partes = linea.split(":", 1)
         if len(partes) != 2:
             continue
         etiqueta = normalizar(partes[0]).strip(" -•*")
-        campo = sinonimos.get(etiqueta) or ETIQUETAS_VISUALES.get(etiqueta)
         valor = partes[1].strip()
+        if etiqueta == "domicilio":
+            if inicio_empleado is None:
+                # La etiqueta sola no permite asignar titular.
+                continue
+            campo = "domicilio_empleador" if i < inicio_empleado else "domicilio_empleado"
+        else:
+            campo = sinonimos.get(etiqueta) or ETIQUETAS_VISUALES.get(etiqueta)
         if not campo or not 2 <= len(valor) <= 160:
             continue
         if campo in ("fecha_inicio", "fecha_nacimiento"):
-            from datetime import date
             try:
                 date.fromisoformat(valor)
             except ValueError:
@@ -533,7 +563,9 @@ def campos_ocr(texto: str) -> dict[str, str]:
             en_conflicto.add(campo)
         else:
             hallados[campo] = valor
-    return {k: v for k, v in hallados.items() if k not in en_conflicto}
+
+    return {campo: valor for campo, valor in hallados.items()
+            if campo not in en_conflicto}
 
 def interpretar_imagen(
     contenido: bytes,
