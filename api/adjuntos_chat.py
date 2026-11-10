@@ -506,7 +506,9 @@ def campos_ocr(texto: str) -> dict[str, str]:
         "remuneracion bruta": "remuneracion_bruta",
         "lugar de trabajo": "lugar_trabajo",
         "cuit": "cuit_empleador",
-        "domicilio": "domicilio_empleado",
+        # "Domicilio" sin contexto es ambiguo: puede ser el del empleador.
+        "domicilio del empleado": "domicilio_empleado",
+        "domicilio del empleador": "domicilio_empleador",
     }
     for linea in texto.splitlines()[:45]:
         partes = linea.split(":", 1)
