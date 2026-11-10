@@ -92,6 +92,27 @@ class PruebasCorrecciones(unittest.TestCase):
         self.assertEqual(datos.get("puesto"), "Analista de RR. HH.")
         self.assertEqual(len(datos), 4)
 
+    def test_ocr_encabezado_y_domicilios_del_documento(self):
+        texto = (
+            "HumanIA S.A. CUIT: 30-00000001-1\n"
+            "Domicilio: Av. 9 de Julio 1234, CABA\n"
+            "CONTRATO DE TRABAJO\n"
+            "Empleado/a: Martín López\n"
+            "DNI: 37.456.789\n"
+            "Domicilio: Calle Principal 456, Formosa\n"
+        )
+        datos = campos_ocr(texto)
+        self.assertEqual(datos["empleador"], "HumanIA S.A.")
+        self.assertEqual(datos["cuit_empleador"], "30-00000001-1")
+        self.assertEqual(datos["domicilio_empleador"], "Av. 9 de Julio 1234, CABA")
+        self.assertEqual(datos["domicilio_empleado"], "Calle Principal 456, Formosa")
+
+    def test_ocr_domicilio_sin_contexto_no_se_asigna(self):
+        self.assertNotIn(
+            "domicilio_empleado",
+            campos_ocr("Domicilio: Calle de Prueba 123")
+        )
+
     def test_vision_etiquetas_con_guion_y_sin_inventar_campos(self):
         texto = (
             "- Nombre del empleado: Sofía Martínez\n"
