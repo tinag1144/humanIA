@@ -442,13 +442,27 @@ def campos_visuales(texto: str) -> dict[str, str]:
             if campo not in en_conflicto}
 
 
-def interpretar_imagen(contenido: bytes) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
+def interpretar_imagen(
+    contenido: bytes,
+    diagnostico: dict | None = None,
+) -> tuple[dict[str, str], dict[str, tuple[str, str]]]:
     imagen = preparar_imagen(contenido)
     imagen_b64 = base64.b64encode(imagen).decode("ascii")
 
-    # Dos lecturas separadas: si discrepan, ningún valor se da por recuperado.
-    primera = campos_visuales(consultar_modelo_visual(imagen_b64, IMAGE_PROMPT))
-    segunda = campos_visuales(consultar_modelo_visual(imagen_b64, RETRY_PROMPT))
+    # Guardamos únicamente conteos para diagnosticar la lectura, no texto sensible.
+    texto_primera = consultar_modelo_visual(imagen_b64, IMAGE_PROMPT)
+    texto_segunda = consultar_modelo_visual(imagen_b64, RETRY_PROMPT)
+    primera = campos_visuales(texto_primera)
+    segunda = campos_visuales(texto_segunda)
+    if diagnostico is not None:
+        diagnostico.update({
+            "primera_lineas": len(texto_primera.splitlines()),
+            "primera_campos": len(primera),
+            "primera_invalida": es_respuesta_invalida(texto_primera),
+            "segunda_lineas": len(texto_segunda.splitlines()),
+            "segunda_campos": len(segunda),
+            "segunda_invalida": es_respuesta_invalida(texto_segunda),
+        })
     coincidentes = {}
     dudosos = {}
     for campo in set(primera) | set(segunda):
@@ -691,7 +705,8 @@ async def procesar_adjunto(
 
     # Imagen: lectura conservadora de campos conocidos, sin guardar en contrato.
     if extension in {".png", ".jpg", ".jpeg", ".webp"}:
-        coincidentes, dudosos = interpretar_imagen(contenido)
+        diagnostico_visual = {}
+        coincidentes, dudosos = interpretar_imagen(contenido, diagnostico_visual)
         mensaje += "LECTURA VISUAL PROVISIONAL (requiere revisión humana)\n\n"
         if coincidentes:
             mensaje += "Campos identificados en ambas lecturas:\n"
@@ -707,6 +722,16 @@ async def procesar_adjunto(
                 f"• {ETIQUETAS[campo]}: revisar en la imagen original"
                 for campo in sorted(dudosos)
             ) + "\n\n"
+        if not coincidentes:
+            mensaje += (
+                "Diagnóstico de lectura (sin mostrar datos personales):\n"
+                f"• Lectura 1: {diagnostico_visual['primera_lineas']} líneas, "
+                f"{diagnostico_visual['primera_campos']} campos reconocidos, "
+                f"respuesta no fiable: {'sí' if diagnostico_visual['primera_invalida'] else 'no'}.\n"
+                f"• Lectura 2: {diagnostico_visual['segunda_lineas']} líneas, "
+                f"{diagnostico_visual['segunda_campos']} campos reconocidos, "
+                f"respuesta no fiable: {'sí' if diagnostico_visual['segunda_invalida'] else 'no'}.\n\n"
+            )
         mensaje += (
             "Los campos identificados tampoco están verificados contra el original.\n"
             "No se incorporó ningún dato al contrato ni se registraron cambios.\n"
