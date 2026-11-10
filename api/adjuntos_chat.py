@@ -444,6 +444,95 @@ def campos_visuales(texto: str) -> dict[str, str]:
             if campo not in en_conflicto}
 
 
+
+def leer_ocr_local(contenido: bytes) -> tuple[str, int]:
+    """OCR determinista de texto impreso, sin generación de contenido.
+
+    RapidOCR es opcional. Ningún resultado OCR se incorpora al contrato.
+    """
+    try:
+        import numpy as np
+        from rapidocr import RapidOCR
+    except ImportError:
+        return "", 0
+
+    try:
+        with Image.open(io.BytesIO(contenido)) as img:
+            imagen = ImageOps.exif_transpose(img).convert("RGB")
+            imagen.thumbnail((2200, 2200))
+            resultado = RapidOCR()(np.asarray(imagen))
+        textos = list(resultado.txts or [])
+        puntajes = list(resultado.scores or [])
+        cajas = resultado.boxes
+        if cajas is None:
+            return "", 0
+        elementos = []
+        for caja, texto, certeza in zip(cajas, textos, puntajes):
+            if not isinstance(texto, str) or float(certeza) < 0.65:
+                continue
+            izquierda = min(float(p[0]) for p in caja)
+            arriba = min(float(p[1]) for p in caja)
+            abajo = max(float(p[1]) for p in caja)
+            elementos.append((arriba, izquierda, max(abajo-arriba, 8.0), texto.strip()))
+        elementos.sort(key=lambda x: (x[0], x[1]))
+        filas: list[list] = []
+        for y, x, altura, palabra in elementos:
+            if not palabra:
+                continue
+            if filas and abs(y-filas[-1][0]) < max(9.0, min(filas[-1][2], altura)*0.55):
+                filas[-1][1].append((x, palabra))
+            else:
+                filas.append([y, [(x, palabra)], altura])
+        lineas = [" ".join(p for _, p in sorted(partes)) for _, partes, _ in filas]
+        return "\n".join(lineas)[:MAX_TEXT], len(elementos)
+    except Exception:
+        # La lectura OCR nunca debe impedir revisar el documento en el chat.
+        return "", 0
+
+
+def campos_ocr(texto: str) -> dict[str, str]:
+    """Busca exclusivamente etiquetas impresas explícitas en líneas OCR."""
+    hallados = {}
+    en_conflicto = set()
+    sinonimos = {
+        "empleado/a": "nombre_empleado",
+        "empleado": "nombre_empleado",
+        "dni": "dni_empleado",
+        "fecha de nacimiento": "fecha_nacimiento",
+        "puesto": "puesto",
+        "tipo de contrato": "tipo_contrato",
+        "fecha de inicio": "fecha_inicio",
+        "jornada laboral": "jornada_laboral",
+        "remuneracion bruta": "remuneracion_bruta",
+        "lugar de trabajo": "lugar_trabajo",
+        "cuit": "cuit_empleador",
+        "domicilio": "domicilio_empleado",
+    }
+    for linea in texto.splitlines()[:45]:
+        partes = linea.split(":", 1)
+        if len(partes) != 2:
+            continue
+        etiqueta = normalizar(partes[0]).strip(" -•*")
+        campo = sinonimos.get(etiqueta) or ETIQUETAS_VISUALES.get(etiqueta)
+        valor = partes[1].strip()
+        if not campo or not 2 <= len(valor) <= 160:
+            continue
+        if campo in ("fecha_inicio", "fecha_nacimiento"):
+            from datetime import date
+            try:
+                date.fromisoformat(valor)
+            except ValueError:
+                continue
+        if campo == "dni_empleado" and not re.fullmatch(r"[0-9. -]{7,16}", valor):
+            continue
+        if campo == "cuit_empleador" and not re.fullmatch(r"[0-9-]{11,13}", valor):
+            continue
+        if campo in hallados and normalizar(hallados[campo]) != normalizar(valor):
+            en_conflicto.add(campo)
+        else:
+            hallados[campo] = valor
+    return {k: v for k, v in hallados.items() if k not in en_conflicto}
+
 def interpretar_imagen(
     contenido: bytes,
     diagnostico: dict | None = None,
@@ -713,9 +802,33 @@ async def procesar_adjunto(
 
     # Imagen: lectura conservadora de campos conocidos, sin guardar en contrato.
     if extension in {".png", ".jpg", ".jpeg", ".webp"}:
+        texto_ocr, cantidad_ocr = leer_ocr_local(contenido)
+        if cantidad_ocr:
+            recuperados_ocr = campos_ocr(texto_ocr)
+            mensaje += "LECTURA OCR LOCAL (requiere revisión humana)\n\n"
+            mensaje += f"Segmentos de texto detectados: {cantidad_ocr}.\n"
+            if recuperados_ocr:
+                mensaje += "Campos detectados por OCR (NO confirmados):\n"
+                mensaje += "\n".join(
+                    f"• {ETIQUETAS[campo]}: {valor}"
+                    for campo, valor in sorted(recuperados_ocr.items())
+                ) + "\n\n"
+            mensaje += (
+                "Texto OCR provisional (verificar palabra por palabra con la imagen):\n"
+                + texto_ocr[:5000] + "\n\n"
+                "El OCR también puede confundir letras y números.\n"
+                "No se incorporó ningún dato al contrato ni se registraron cambios."
+            )
+            return salida(
+                mensaje, sesion,
+                ["interpretar_adjunto", "ocr_local", "revision_humana_requerida"],
+            )
         diagnostico_visual = {}
         coincidentes, dudosos = interpretar_imagen(contenido, diagnostico_visual)
-        mensaje += "LECTURA VISUAL PROVISIONAL (requiere revisión humana)\n\n"
+        mensaje += (
+            "LECTURA VISUAL PROVISIONAL (requiere revisión humana)\n"
+            "OCR local no disponible o sin resultados; se utilizó la lectura visual.\n\n"
+        )
         if coincidentes:
             mensaje += "Campos identificados en ambas lecturas:\n"
             mensaje += "\n".join(
