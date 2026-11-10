@@ -417,7 +417,7 @@ def campos_visuales(texto: str) -> dict[str, str]:
         if ":" not in linea or len(linea) > 350:
             continue
         etiqueta, valor = linea.split(":", 1)
-        campo = ETIQUETAS_VISUALES.get(normalizar(etiqueta.strip()))
+        etiqueta_limpia = re.sub(r"^\s*(?:[-*•]+|\d+[.)])\s*", "", etiqueta).strip()\n        etiqueta_limpia = etiqueta_limpia.strip("*_` ")\n        campo = ETIQUETAS_VISUALES.get(normalizar(etiqueta_limpia))
         valor = valor.strip().strip("* \t")
         if not campo or not (2 <= len(valor) <= 180):
             continue
@@ -725,7 +725,7 @@ async def procesar_adjunto(
         if dudosos:
             mensaje += "Campos dudosos o incompletos (NO confirmados):\n"
             mensaje += "\n".join(
-                f"• {ETIQUETAS[campo]}: revisar en la imagen original"
+                f"• {ETIQUETAS[campo]}: {dudosos[campo][0] if dudosos[campo][0] != 'No detectado' else dudosos[campo][1]} (provisional, SIN CONFIRMAR; verificar en original)"
                 for campo in sorted(dudosos)
             ) + "\n\n"
         if not coincidentes:
