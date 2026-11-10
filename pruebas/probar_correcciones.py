@@ -9,6 +9,9 @@ from pathlib import Path
 from uuid import uuid4
 from unittest.mock import patch
 
+# Inicializar FastAPI antes de importar el flujo, que depende de api.main.
+# Esto evita el import circular durante unittest.
+import api.main  # noqa: F401
 from api.flujo_conversacional import chat_contratos
 from api.frontend_bridge import MensajeChat
 from api.adjuntos_chat import extraer_campos_etiquetados, es_respuesta_invalida, campos_visuales, interpretar_imagen
