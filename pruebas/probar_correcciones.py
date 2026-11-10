@@ -78,6 +78,19 @@ class PruebasCorrecciones(unittest.TestCase):
         self.assertNotIn("fecha_nacimiento", datos)
         self.assertEqual(len(datos), 3)
 
+    def test_vision_etiquetas_con_guion_y_sin_inventar_campos(self):
+        texto = (
+            "- Nombre del empleado: Sofía Martínez\n"
+            "- DNI: 00.000.007\n"
+            "- Fecha de inicio: 2026-11-16\n"
+            "- Firma del gerente: Juan Pérez\n"
+        )
+        campos = campos_visuales(texto)
+        self.assertEqual(campos.get("nombre_empleado"), "Sofía Martínez")
+        self.assertEqual(campos.get("dni_empleado"), "00.000.007")
+        self.assertEqual(campos.get("fecha_inicio"), "2026-11-16")
+        self.assertEqual(len(campos), 3)
+
     def test_vision_no_confirma_lecturas_discordantes(self):
         with patch("api.adjuntos_chat.preparar_imagen", return_value=b"imagen"), \
              patch("api.adjuntos_chat.consultar_modelo_visual", side_effect=[
