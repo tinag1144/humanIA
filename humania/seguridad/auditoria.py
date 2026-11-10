@@ -17,7 +17,6 @@ No aprueba ni firma contratos.
 import hashlib
 import sqlite3
 
-from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -62,7 +61,7 @@ def inicializar_auditoria():
 
     inicializar_base()
 
-    with closing(conectar()) as db:
+    with conectar() as db:
 
         db.execute("""
             CREATE TABLE IF NOT EXISTS borradores (
@@ -135,7 +134,7 @@ def registrar_borrador(
 
         inicializar_auditoria()
 
-        with closing(conectar()) as db:
+        with conectar() as db:
             db.execute("BEGIN IMMEDIATE")
 
             # Consultamos el contrato dentro de la transacción.
@@ -275,7 +274,7 @@ def verificar_borrador(borrador_id: int) -> dict:
     try:
         inicializar_auditoria()
 
-        with closing(conectar()) as db:
+        with conectar() as db:
 
             fila = db.execute(
                 """
