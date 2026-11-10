@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from api.flujo_conversacional import chat_contratos
 from api.frontend_bridge import MensajeChat
-from api.adjuntos_chat import extraer_campos_etiquetados, es_respuesta_invalida
+from api.adjuntos_chat import extraer_campos_etiquetados, es_respuesta_invalida, campos_visuales, interpretar_imagen
 from api.historial_chat import (
     GuardarTurno, MensajeGuardado, guardar_turno, listar, obtener,
 )
@@ -56,6 +56,34 @@ class PruebasCorrecciones(unittest.TestCase):
             for i in range(18)
         ])
         self.assertTrue(es_respuesta_invalida(alucinacion))
+
+    def test_vision_no_acepta_texto_repetitivo(self):
+        texto = "\\n".join(["Firma del gerente: figura impresa"] * 16)
+        self.assertEqual(campos_visuales(texto), {})
+
+    def test_vision_solo_etiquetas_legibles(self):
+        texto = (
+            "Nombre del empleado: Sofía Martínez\\n"
+            "DNI: 00.000.007\\n"
+            "Fecha de inicio: 2026-11-16\\n"
+            "Firma del presidente: Juan Pérez\\n"
+            "Fecha de nacimiento: mañana"
+        )
+        datos = campos_visuales(texto)
+        self.assertEqual(datos["nombre_empleado"], "Sofía Martínez")
+        self.assertEqual(datos["dni_empleado"], "00.000.007")
+        self.assertNotIn("fecha_nacimiento", datos)
+        self.assertEqual(len(datos), 3)
+
+    def test_vision_no_confirma_lecturas_discordantes(self):
+        with patch("api.adjuntos_chat.preparar_imagen", return_value=b"imagen"), \
+             patch("api.adjuntos_chat.consultar_modelo_visual", side_effect=[
+                 "Nombre del empleado: Sofía Martínez\\nFecha de inicio: 2026-11-16",
+                 "Nombre del empleado: Sofía Martínez\\nFecha de inicio: 2026-11-17",
+             ]):
+            confirmados, dudosos = interpretar_imagen(b"imagen")
+        self.assertEqual(confirmados, {"nombre_empleado": "Sofía Martínez"})
+        self.assertIn("fecha_inicio", dudosos)
 
     def test_historial_persiste_y_aísla_usuarios(self):
         with tempfile.TemporaryDirectory() as temporal:
