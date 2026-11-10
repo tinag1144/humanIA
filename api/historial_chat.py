@@ -5,6 +5,7 @@ El historial es independiente de las sesiones efímeras de ADK.
 """
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
@@ -30,21 +31,33 @@ class GuardarTurno(BaseModel):
     mensajes: list[MensajeGuardado] = Field(min_length=1, max_length=2)
 
 
+@contextmanager
 def conectar():
+    """Abre y cierra SQLite explícitamente, también en Windows.
+
+    El context manager nativo de sqlite3 solo maneja transacciones:
+    no cierra la conexión y bloquea el borrado de DB temporales.
+    """
     DB.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(str(DB), timeout=20)
-    db.execute("""CREATE TABLE IF NOT EXISTS sesiones (
-        usuario TEXT NOT NULL, sesion TEXT NOT NULL, titulo TEXT NOT NULL,
-        actualizado TEXT NOT NULL, PRIMARY KEY(usuario, sesion)
-    )""")
-    db.execute("""CREATE TABLE IF NOT EXISTS mensajes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT NOT NULL,
-        sesion TEXT NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL,
-        herramientas TEXT NOT NULL DEFAULT '[]', fecha TEXT NOT NULL
-    )""")
-    db.commit()
-    return db
-
+    try:
+        db.execute("""CREATE TABLE IF NOT EXISTS sesiones (
+            usuario TEXT NOT NULL, sesion TEXT NOT NULL, titulo TEXT NOT NULL,
+            actualizado TEXT NOT NULL, PRIMARY KEY(usuario, sesion)
+        )""")
+        db.execute("""CREATE TABLE IF NOT EXISTS mensajes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, usuario TEXT NOT NULL,
+            sesion TEXT NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL,
+            herramientas TEXT NOT NULL DEFAULT '[]', fecha TEXT NOT NULL
+        )""")
+        db.commit()
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 def nombre_usuario(usuario: dict) -> str:
     nombre = str(usuario.get("usuario", "")).strip()
