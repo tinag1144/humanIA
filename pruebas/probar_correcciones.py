@@ -14,7 +14,7 @@ from unittest.mock import patch
 import api.main  # noqa: F401
 from api.flujo_conversacional import chat_contratos
 from api.frontend_bridge import MensajeChat
-from api.adjuntos_chat import extraer_campos_etiquetados, es_respuesta_invalida, campos_visuales, interpretar_imagen
+from api.adjuntos_chat import extraer_campos_etiquetados, es_respuesta_invalida, campos_visuales, interpretar_imagen, campos_ocr
 from api.historial_chat import (
     GuardarTurno, MensajeGuardado, guardar_turno, listar, obtener,
 )
@@ -77,6 +77,20 @@ class PruebasCorrecciones(unittest.TestCase):
         self.assertEqual(datos["dni_empleado"], "00.000.007")
         self.assertNotIn("fecha_nacimiento", datos)
         self.assertEqual(len(datos), 3)
+
+    def test_ocr_local_reconoce_datos_impresos_sin_inferencias(self):
+        texto = (
+            "Empleado/a: Martín López\n"
+            "DNI: 37.456.789\n"
+            "Fecha de inicio: 2025-02-01\n"
+            "Puesto: Analista de RR. HH.\n"
+            "Firma del presidente: No corresponde\n"
+        )
+        datos = campos_ocr(texto)
+        self.assertEqual(datos.get("nombre_empleado"), "Martín López")
+        self.assertEqual(datos.get("dni_empleado"), "37.456.789")
+        self.assertEqual(datos.get("puesto"), "Analista de RR. HH.")
+        self.assertEqual(len(datos), 4)
 
     def test_vision_etiquetas_con_guion_y_sin_inventar_campos(self):
         texto = (
