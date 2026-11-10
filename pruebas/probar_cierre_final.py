@@ -8,6 +8,7 @@ import io
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
@@ -53,7 +54,7 @@ class PruebasCierreFinal(unittest.TestCase):
         self.temporal = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporal.cleanup)
         self.ruta_db = Path(self.temporal.name) / "aprobaciones.db"
-        with sqlite3.connect(self.ruta_db) as db:
+        with closing(sqlite3.connect(self.ruta_db)) as db:
             db.execute(
                 """CREATE TABLE decisiones_borrador (
                     borrador_id INTEGER PRIMARY KEY,
@@ -76,9 +77,13 @@ class PruebasCierreFinal(unittest.TestCase):
                     "2026-11-09T04:55:00+00:00",
                 ),
             )
+            db.commit()
 
+    @contextmanager
     def _conexion(self):
-        return sqlite3.connect(self.ruta_db)
+        with closing(sqlite3.connect(self.ruta_db)) as db:
+            with db:
+                yield db
 
     def test_copia_aprobada_no_modifica_original_ni_sha(self):
         original = _docx_ficticio()
