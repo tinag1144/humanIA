@@ -13,4 +13,7 @@ docx2pdf>=0.1.8,<1.0
 pypdf>=5.0,<7.0
 reportlab>=4.2,<5.0
 Pillow>=10.0,<13.0
+# OCR local de imágenes: evita depender de transcripciones generativas imprecisas.
+rapidocr>=3.0,<4.0
+onnxruntime>=1.18,<2.0
 pywin32>=306; sys_platform == "win32"
