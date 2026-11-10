@@ -459,6 +459,12 @@ def interpretar_imagen(
             "primera_lineas": len(texto_primera.splitlines()),
             "primera_campos": len(primera),
             "primera_invalida": es_respuesta_invalida(texto_primera),
+            "primera_con_dos_puntos": sum(":" in linea for linea in texto_primera.splitlines()),
+            "primera_etiquetas": [
+                re.sub(r"[^a-zA-ZáéíóúÁÉÍÓÚñÑ /_-]", "", linea.split(":", 1)[0]).strip()[:55]
+                for linea in texto_primera.splitlines()
+                if ":" in linea and 0 < len(linea.split(":", 1)[0]) < 65
+            ][:6],
             "segunda_lineas": len(texto_segunda.splitlines()),
             "segunda_campos": len(segunda),
             "segunda_invalida": es_respuesta_invalida(texto_segunda),
@@ -727,7 +733,9 @@ async def procesar_adjunto(
                 "Diagnóstico de lectura (sin mostrar datos personales):\n"
                 f"• Lectura 1: {diagnostico_visual['primera_lineas']} líneas, "
                 f"{diagnostico_visual['primera_campos']} campos reconocidos, "
-                f"respuesta no fiable: {'sí' if diagnostico_visual['primera_invalida'] else 'no'}.\n"
+                f"respuesta no fiable: {'sí' if diagnostico_visual['primera_invalida'] else 'no'}.\n"                f"• Líneas con ':' en lectura 1: {diagnostico_visual['primera_con_dos_puntos']}.\n"
+                f"• Etiquetas detectadas (sin valores): {diagnostico_visual['primera_etiquetas']}.\n"
+
                 f"• Lectura 2: {diagnostico_visual['segunda_lineas']} líneas, "
                 f"{diagnostico_visual['segunda_campos']} campos reconocidos, "
                 f"respuesta no fiable: {'sí' if diagnostico_visual['segunda_invalida'] else 'no'}.\n\n"
