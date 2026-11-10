@@ -9,6 +9,7 @@ en SQLite sin aprobar contratos automáticamente.
 import hashlib
 import json
 import sqlite3
+from contextlib import contextmanager
 
 from pathlib import Path
 from uuid import uuid4
@@ -21,17 +22,19 @@ CARPETA_DATOS = BASE_DIR / "datos"
 RUTA_DB = CARPETA_DATOS / "humania.db"
 
 
+@contextmanager
 def conectar():
-    """
-    Abre una conexión con la base de datos.
-    """
+    """Conexión transaccional con cierre explícito, incluso en Windows.
 
-    CARPETA_DATOS.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    return sqlite3.connect(str(RUTA_DB))
+    El context manager nativo de sqlite3 confirma/revierte pero no cierra.
+    """
+    CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(str(RUTA_DB))
+    try:
+        with db:
+            yield db
+    finally:
+        db.close()
 
 
 def calcular_huella(datos: dict) -> str:
