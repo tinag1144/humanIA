@@ -417,7 +417,9 @@ def campos_visuales(texto: str) -> dict[str, str]:
         if ":" not in linea or len(linea) > 350:
             continue
         etiqueta, valor = linea.split(":", 1)
-        etiqueta_limpia = re.sub(r"^\s*(?:[-*•]+|\d+[.)])\s*", "", etiqueta).strip()\n        etiqueta_limpia = etiqueta_limpia.strip("*_` ")\n        campo = ETIQUETAS_VISUALES.get(normalizar(etiqueta_limpia))
+        etiqueta_limpia = re.sub(r"^\s*(?:[-*•]+|\d+[.)])\s*", "", etiqueta).strip()
+        etiqueta_limpia = etiqueta_limpia.strip("*_` ")
+        campo = ETIQUETAS_VISUALES.get(normalizar(etiqueta_limpia))
         valor = valor.strip().strip("* \t")
         if not campo or not (2 <= len(valor) <= 180):
             continue
