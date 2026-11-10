@@ -8,6 +8,8 @@ Las pruebas con Ollama/Word requieren validación funcional separada.
 """
 import subprocess
 import sys
+import shutil
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,7 +22,7 @@ PASOS = [
          "pruebas.probar_primera_ejecucion", "pruebas.probar_correcciones", "-v"],
         ROOT,
     ),
-    ("Compilación frontend TypeScript + Vite", ["npm", "run", "build"], ROOT / "frontend"),
+    ("Compilación frontend TypeScript + Vite", [shutil.which("npm.cmd") or shutil.which("npm") or "npm.cmd" if os.name == "nt" else "npm", "run", "build"], ROOT / "frontend"),
     ("Diagnóstico de dependencias y plantillas", [sys.executable, "pruebas/diagnostico_humania.py"], ROOT),
 ]
 
@@ -40,6 +42,8 @@ def ejecutar() -> int:
         except FileNotFoundError:
             codigo = 127
             print("No se encontró el comando: " + comando[0])
+            if nombre.startswith("Compilación frontend"):
+                print("Instalá Node.js o asegurá que npm.cmd esté disponible en PATH.")
         if codigo:
             fallidos.append(nombre)
             print("ERROR:", nombre, flush=True)
