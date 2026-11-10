@@ -18,6 +18,8 @@ from fastapi import HTTPException
 from humania.seguridad.identificadores import (
     validar_identificador, filtrar_identificadores,
 )
+# Inicializar la aplicación antes de importar routers dependientes de api.main.
+import api.main  # noqa: F401
 from api.exportacion_aprobada import crear_copia_presentacion
 from api.adjuntos_chat import (
     extraer_texto_documento, validar_archivo, comparar_y_actualizar,
