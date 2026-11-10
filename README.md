@@ -64,7 +64,7 @@ ollama pull llava:7b
 ollama list
 ```
 
-La descarga de `llava:7b` es opcional si no se van a probar imágenes. **No implica que su lectura de documentos sea fiable**.
+La descarga de `llava:7b` es opcional si no se van a probar imágenes. **No implica que su lectura de documentos sea fiable**. El reconocimiento de texto impreso utiliza primero `rapidocr` y `onnxruntime`, instalados desde `requirements.txt`. Si el OCR no está disponible o no reconoce texto, el sistema recurre al modelo visual, siempre con revisión humana.
 
 ### Inicialización
 
@@ -83,7 +83,7 @@ python -m uvicorn api.main:app --reload --host 127.0.0.1 --port 8001
 **Terminal 2: agente ADK**
 
 ```powershell
-adk api_server --host 127.0.0.1 --port 8000
+adk api_server . --host 127.0.0.1 --port 8000
 ```
 
 **Terminal 3: interfaz**
@@ -135,7 +135,7 @@ Después queda la comprobación funcional de **la descarga aprobada** con Micros
 El circuito conversacional, la generación del borrador, su aprobación humana y las descargas se probaron con **datos ficticios**, incluyendo un caso de Pedro Gómez. El informe detallado y la matriz F01–F10 están en [`cierre_humania/ESTADO_Y_PRUEBAS.md`](cierre_humania/ESTADO_Y_PRUEBAS.md).
 
 **Pendientes declarados:**
-- La lectura automática de imágenes no es confiable: requisito multimodal **parcial**.
+- El OCR local de imágenes fue comprobado con un contrato ficticio y recuperó 13 campos; aún puede confundir caracteres (por ejemplo, `I` y `l`) y **todos los valores requieren revisión humana**.
 - Conviene repetir la regresión de DOCX de entrada, RAG y control de permisos en la instalación final.
 - La exportación a PDF depende de Windows y Microsoft Word; no se puede asegurar desde un entorno de CI Linux.
 - Si la representación descargada sigue diciendo «BORRADOR - SIN APROBACIÓN FINAL», comprobar el módulo de presentación aprobada antes de usarla como versión final.
@@ -173,3 +173,13 @@ Proyecto académico de demostración — **HumanIA S.A.** · 2026.
 Pruebas unitarias añadidas: `python -m unittest pruebas.probar_correcciones -v`. Para el resto de controles, `python pruebas/validar_todo.py`.
 
 > Estas correcciones están publicadas en GitHub, pero sus rutas completas y la compilación final deben verificarse en la instalación Windows actualizada antes de marcar el cierre como aprobado.
+
+## Verificación de instalación limpia (Windows)
+
+1. En un entorno virtual nuevo, instalar `python -m pip install -r requirements.txt` y ejecutar `python -m pip check`.
+2. Compilar la interfaz con `cd frontend; npm install; npm run build; cd ..`.
+3. Ejecutar `python -m unittest pruebas.probar_correcciones -v` y `python pruebas/validar_todo.py` desde la raíz.
+4. Arrancar FastAPI, ADK con `adk api_server . --host 127.0.0.1 --port 8000`, Ollama y Vite; comprobar inicio de sesión, consulta RAG y lectura OCR de una imagen ficticia.
+5. Asegurar que `datos/*.db` y documentos locales no se copien a GitHub ni se eliminen al actualizar. Las pruebas no sustituyen la revisión humana de datos y documentos.
+
+**Nota:** el historial nuevo se almacena en SQLite, pero reabrir una conversación después de reiniciar ADK puede requerir una sesión nueva del agente; los mensajes históricos visibles no implican por sí solos memoria recuperada por el modelo.
