@@ -5,7 +5,6 @@ import hmac
 import secrets
 import sqlite3
 
-from contextlib import closing
 from datetime import datetime, timedelta, timezone
 from getpass import getpass
 
@@ -24,7 +23,7 @@ def inicializar_usuarios():
     Crea las tablas de usuarios y sesiones.
     """
 
-    with closing(conectar()) as db:
+    with conectar() as db:
 
         db.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
@@ -89,7 +88,7 @@ def crear_responsable(usuario: str, clave: str) -> dict:
     clave_hash = calcular_hash(clave, sal)
 
     try:
-        with closing(conectar()) as db:
+        with conectar() as db:
 
             # Esta función solo permite crear el primer usuario.
             total = db.execute(
@@ -135,7 +134,7 @@ def iniciar_sesion(usuario: str, clave: str) -> dict:
 
     inicializar_usuarios()
 
-    with closing(conectar()) as db:
+    with conectar() as db:
         fila = db.execute(
             """
             SELECT id, usuario, sal, clave_hash, rol
@@ -167,7 +166,7 @@ def iniciar_sesion(usuario: str, clave: str) -> dict:
     # La sesión dura una hora.
     vencimiento = datetime.now(timezone.utc) + timedelta(hours=1)
 
-    with closing(conectar()) as db:
+    with conectar() as db:
         db.execute(
             """
             INSERT INTO sesiones
@@ -200,7 +199,7 @@ def verificar_token(token: str) -> dict | None:
         token.encode("utf-8")
     ).hexdigest()
 
-    with closing(conectar()) as db:
+    with conectar() as db:
         fila = db.execute(
             """
             SELECT u.id, u.usuario, u.rol, s.vencimiento
